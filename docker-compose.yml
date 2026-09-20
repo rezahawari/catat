@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: catat_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: catat_user
+      POSTGRES_PASSWORD: catat_password
+      POSTGRES_DB: catat_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./apps/backend/db/migrations/000001_init_schema.up.sql:/docker-entrypoint-initdb.d/01_init.sql
+
+  backend:
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile
+    container_name: catat_api
+    restart: always
+    environment:
+      PORT: "8080"
+      ENV: "development"
+      DATABASE_URL: "postgres://catat_user:catat_password@postgres:5432/catat_db?sslmode=disable"
+      JWT_ACCESS_SECRET: "catat_jwt_access_super_secret_key_2026"
+      JWT_REFRESH_SECRET: "catat_jwt_refresh_super_secret_key_2026"
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_data:

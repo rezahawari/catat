@@ -1,0 +1,50 @@
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# IDE & Editors
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+*.iml
+
+# Environment & Secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Go / Backend
+apps/backend/bin/
+apps/backend/*.exe
+apps/backend/*.exe~
+apps/backend/*.dll
+apps/backend/*.so
+apps/backend/*.dylib
+apps/backend/tmp/
+
+# Flutter / Mobile
+**/build/
+**/.dart_tool/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/.pub/
+**/.pub-cache/
+**/coverage/
+apps/mobile/.dart_tool/
+apps/mobile/build/
+apps/mobile/android/app/debug/
+apps/mobile/android/app/profile/
+apps/mobile/android/app/release/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
