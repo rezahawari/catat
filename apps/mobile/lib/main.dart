@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'core/network/api_client.dart';
 import 'core/theme/app_colors.dart';
 import 'core/theme/app_theme.dart';
+import 'features/auth/data/auth_repository.dart';
 import 'features/auth/presentation/login_screen.dart';
 import 'features/auth/presentation/register_screen.dart';
 import 'features/dashboard/presentation/dashboard_home_screen.dart';
@@ -10,8 +13,9 @@ import 'features/invoices/presentation/invoice_management_screen.dart';
 import 'features/accounts/presentation/accounts_overview_screen.dart';
 import 'features/debts/presentation/debts_screen.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await initializeDateFormatting('id_ID', null);
   runApp(const ProviderScope(child: CatatApp()));
 }
 
@@ -44,10 +48,50 @@ class MainNavigationShell extends StatefulWidget {
 
 class _MainNavigationShellState extends State<MainNavigationShell> {
   int _currentIndex = 0;
-  bool _isLoggedIn = true;
+  bool _isCheckingAuth = true;
+  bool _isLoggedIn = false;
+  final _authRepo = AuthRepository(ApiClient());
+
+  @override
+  void initState() {
+    super.initState();
+    _checkInitialAuth();
+  }
+
+  Future<void> _checkInitialAuth() async {
+    final loggedIn = await _authRepo.isLoggedIn();
+    if (mounted) {
+      setState(() {
+        _isLoggedIn = loggedIn;
+        _isCheckingAuth = false;
+      });
+    }
+  }
+
+  Future<void> _handleLogout() async {
+    await _authRepo.logout();
+    if (mounted) {
+      setState(() {
+        _isLoggedIn = false;
+        _currentIndex = 0;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    if (_isCheckingAuth) {
+      return Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(
+            color: isDark ? AppColors.accentDark : AppColors.accent,
+          ),
+        ),
+      );
+    }
+
     if (!_isLoggedIn) {
       return LoginScreen(
         onLoginSuccess: () => setState(() => _isLoggedIn = true),
@@ -68,13 +112,12 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
       );
     }
 
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     final screens = [
       DashboardHomeScreen(
         onNavigateToReports: () => setState(() => _currentIndex = 1),
         onNavigateToInvoices: () => setState(() => _currentIndex = 2),
         onNavigateToAccounts: () => setState(() => _currentIndex = 3),
+        onLogout: _handleLogout,
       ),
       const FinancialReportScreen(),
       const InvoiceManagementScreen(),

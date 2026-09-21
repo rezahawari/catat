@@ -28,6 +28,29 @@ class _AddTransactionModalState extends State<AddTransactionModal> {
   final TextEditingController _noteController = TextEditingController();
   DateTime _selectedDate = DateTime.now();
 
+  final List<Map<String, dynamic>> _availableAccounts = [
+    {
+      'name': 'Uang Tunai (Cash)',
+      'type': 'cash',
+      'icon': Icons.payments_outlined,
+    },
+    {
+      'name': 'Rekening BCA Utama',
+      'type': 'bank',
+      'icon': Icons.account_balance_outlined,
+    },
+    {
+      'name': 'GoPay & OVO',
+      'type': 'ewallet',
+      'icon': Icons.account_balance_wallet_outlined,
+    },
+    {
+      'name': 'DANA / ShopeePay',
+      'type': 'ewallet',
+      'icon': Icons.phone_android_outlined,
+    },
+  ];
+
   // Categories list
   List<Map<String, dynamic>> get _categories {
     if (widget.spaceType == 'business') {
@@ -78,6 +101,106 @@ class _AddTransactionModalState extends State<AddTransactionModal> {
             _amount = val;
           });
         },
+      ),
+    );
+  }
+
+  void _showAccountPicker() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Pilih Sumber Dana / Dompet',
+              style: AppTypography.headlineMedium(
+                color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 14),
+            ..._availableAccounts.map((acc) {
+              final isSelected = _selectedAccount == acc['name'];
+              return InkWell(
+                onTap: () {
+                  setState(() {
+                    _selectedAccount = acc['name'] as String;
+                  });
+                  Navigator.pop(ctx);
+                },
+                borderRadius: BorderRadius.circular(14),
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? (isDark ? AppColors.accentDark.withOpacity(0.15) : AppColors.accentSoft)
+                        : (isDark ? AppColors.darkCard : AppColors.lightBackground),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: isSelected
+                          ? (isDark ? AppColors.accentDark : AppColors.accent)
+                          : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
+                      width: isSelected ? 1.5 : 1,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? AppColors.accent.withOpacity(0.2)
+                              : (isDark ? AppColors.darkBorder : Colors.black12),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          acc['icon'] as IconData,
+                          size: 20,
+                          color: isSelected
+                              ? (isDark ? AppColors.accentDark : AppColors.accent)
+                              : (isDark ? AppColors.textPrimaryDark : AppColors.textPrimary),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          acc['name'] as String,
+                          style: AppTypography.bodyMedium(
+                            color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
+                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                          ),
+                        ),
+                      ),
+                      if (isSelected)
+                        const Icon(Icons.check_circle_rounded, color: AppColors.accent, size: 22),
+                    ],
+                  ),
+                ),
+              );
+            }),
+            const SizedBox(height: 12),
+          ],
+        ),
       ),
     );
   }
@@ -268,31 +391,36 @@ class _AddTransactionModalState extends State<AddTransactionModal> {
             ),
             const SizedBox(height: 20),
 
-            // Account & Note Row
+            // Account & Date Selector Row
             Row(
               children: [
                 Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: isDark ? AppColors.darkCard : AppColors.lightBackground,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.lightBorder),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.account_balance_wallet_outlined, size: 18, color: AppColors.accent),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            _selectedAccount,
-                            style: AppTypography.bodySmall(
-                              color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
+                  child: InkWell(
+                    onTap: _showAccountPicker,
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: isDark ? AppColors.darkCard : AppColors.lightBackground,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.lightBorder),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.account_balance_wallet_outlined, size: 18, color: AppColors.accent),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              _selectedAccount,
+                              style: AppTypography.bodySmall(
+                                color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            overflow: TextOverflow.ellipsis,
                           ),
-                        ),
-                      ],
+                          const Icon(Icons.keyboard_arrow_down_rounded, size: 18, color: AppColors.textSecondary),
+                        ],
+                      ),
                     ),
                   ),
                 ),

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import '../../../core/network/api_client.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../shared/widgets/custom_text_field.dart';
+import '../data/auth_repository.dart';
 
 class LoginScreen extends StatefulWidget {
   final VoidCallback onLoginSuccess;
@@ -20,16 +22,37 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _authRepo = AuthRepository(ApiClient());
   bool _isLoading = false;
+  String? _errorMessage;
 
-  void _handleLogin() {
-    setState(() => _isLoading = true);
-    Future.delayed(const Duration(milliseconds: 600), () {
-      if (mounted) {
-        setState(() => _isLoading = false);
-        widget.onLoginSuccess();
-      }
+  Future<void> _handleLogin() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+
+    if (email.isEmpty || password.isEmpty) {
+      setState(() => _errorMessage = 'Email dan kata sandi wajib diisi');
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
     });
+
+    final res = await _authRepo.login(email: email, password: password);
+
+    if (!mounted) return;
+
+    setState(() => _isLoading = false);
+
+    if (res['success'] == true) {
+      widget.onLoginSuccess();
+    } else {
+      setState(() {
+        _errorMessage = res['message'] ?? 'Login gagal. Periksa kembali email dan password.';
+      });
+    }
   }
 
   @override
@@ -74,7 +97,31 @@ class _LoginScreenState extends State<LoginScreen> {
                   color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondary,
                 ),
               ),
-              const SizedBox(height: 36),
+              const SizedBox(height: 32),
+
+              if (_errorMessage != null) ...[
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.negativeSoft,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.negative.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.error_outline_rounded, color: AppColors.negative, size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _errorMessage!,
+                          style: AppTypography.bodySmall(color: AppColors.negative),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+              ],
 
               CustomTextField(
                 controller: _emailController,
@@ -106,22 +153,6 @@ class _LoginScreenState extends State<LoginScreen> {
                           child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                         )
                       : const Text('Masuk ke Akun'),
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // Google Sign-In Option
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: OutlinedButton.icon(
-                  onPressed: widget.onLoginSuccess,
-                  icon: const Icon(Icons.g_mobiledata_rounded, size: 26),
-                  label: const Text('Lanjutkan dengan Google'),
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: isDark ? AppColors.darkBorder : AppColors.lightBorder),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
                 ),
               ),
               const SizedBox(height: 30),

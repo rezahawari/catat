@@ -7,6 +7,7 @@ class SpaceSwitcherHeader extends StatelessWidget {
   final String activeSpaceType; // 'personal' or 'business'
   final VoidCallback onSwitchSpace;
   final VoidCallback onOpenNotifications;
+  final VoidCallback? onLogout;
 
   const SpaceSwitcherHeader({
     super.key,
@@ -14,6 +15,7 @@ class SpaceSwitcherHeader extends StatelessWidget {
     required this.activeSpaceType,
     required this.onSwitchSpace,
     required this.onOpenNotifications,
+    this.onLogout,
   });
 
   @override
@@ -91,7 +93,7 @@ class SpaceSwitcherHeader extends StatelessWidget {
           ),
         ),
 
-        // Notifications & Settings Icon
+        // Notifications & Logout Menu
         Row(
           children: [
             IconButton(
@@ -101,6 +103,39 @@ class SpaceSwitcherHeader extends StatelessWidget {
                 color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
               ),
             ),
+            if (onLogout != null)
+              IconButton(
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      title: const Text('Keluar Akun'),
+                      content: const Text('Apakah Anda yakin ingin keluar dari akun saat ini?'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          child: const Text('Batal'),
+                        ),
+                        ElevatedButton(
+                          onPressed: () {
+                            Navigator.pop(ctx);
+                            onLogout!();
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.negative,
+                          ),
+                          child: const Text('Keluar'),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+                icon: const Icon(
+                  Icons.logout_rounded,
+                  color: AppColors.negative,
+                  size: 22,
+                ),
+              ),
           ],
         ),
       ],

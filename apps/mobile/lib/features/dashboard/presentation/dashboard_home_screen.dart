@@ -11,12 +11,14 @@ class DashboardHomeScreen extends StatefulWidget {
   final VoidCallback onNavigateToReports;
   final VoidCallback onNavigateToInvoices;
   final VoidCallback onNavigateToAccounts;
+  final VoidCallback? onLogout;
 
   const DashboardHomeScreen({
     super.key,
     required this.onNavigateToReports,
     required this.onNavigateToInvoices,
     required this.onNavigateToAccounts,
+    this.onLogout,
   });
 
   @override
@@ -215,6 +217,7 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
                 activeSpaceType: _activeSpaceType,
                 onSwitchSpace: _switchSpaceModal,
                 onOpenNotifications: () {},
+                onLogout: widget.onLogout,
               ),
               const SizedBox(height: 20),
 

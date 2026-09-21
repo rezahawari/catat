@@ -2,7 +2,6 @@ package main
 
 import (
 	"log"
-	"os"
 
 	"github.com/finflow/backend/internal/accounts"
 	"github.com/finflow/backend/internal/auth"
@@ -16,6 +15,7 @@ import (
 	"github.com/finflow/backend/internal/middleware"
 	"github.com/finflow/backend/internal/reports"
 	"github.com/finflow/backend/internal/spaces"
+	"github.com/finflow/backend/internal/transactions"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
