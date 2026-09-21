@@ -7,12 +7,16 @@ import '../../../shared/widgets/amount_keypad_sheet.dart';
 class AddTransactionModal extends StatefulWidget {
   final String spaceId;
   final String spaceType; // 'personal' or 'business'
+  final List<Map<String, dynamic>> accounts;
+  final List<Map<String, dynamic>> categories;
   final Function(Map<String, dynamic> transactionData) onSave;
 
   const AddTransactionModal({
     super.key,
     required this.spaceId,
     required this.spaceType,
+    this.accounts = const [],
+    this.categories = const [],
     required this.onSave,
   });
 
@@ -23,36 +27,26 @@ class AddTransactionModal extends StatefulWidget {
 class _AddTransactionModalState extends State<AddTransactionModal> {
   String _type = 'expense'; // 'expense' or 'income'
   double _amount = 0;
-  String? _selectedCategory;
-  String _selectedAccount = 'Uang Tunai (Cash)';
+  Map<String, dynamic>? _selectedCategoryItem;
+  Map<String, dynamic>? _selectedAccountItem;
   final TextEditingController _noteController = TextEditingController();
   DateTime _selectedDate = DateTime.now();
 
-  final List<Map<String, dynamic>> _availableAccounts = [
-    {
-      'name': 'Uang Tunai (Cash)',
-      'type': 'cash',
-      'icon': Icons.payments_outlined,
-    },
-    {
-      'name': 'Rekening BCA Utama',
-      'type': 'bank',
-      'icon': Icons.account_balance_outlined,
-    },
-    {
-      'name': 'GoPay & OVO',
-      'type': 'ewallet',
-      'icon': Icons.account_balance_wallet_outlined,
-    },
-    {
-      'name': 'DANA / ShopeePay',
-      'type': 'ewallet',
-      'icon': Icons.phone_android_outlined,
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
+    if (widget.accounts.isNotEmpty) {
+      _selectedAccountItem = widget.accounts.first;
+    }
+  }
 
-  // Categories list
-  List<Map<String, dynamic>> get _categories {
+  // Categories list filtered by type
+  List<Map<String, dynamic>> get _availableCategories {
+    if (widget.categories.isNotEmpty) {
+      return widget.categories.where((c) => c['type'] == _type).toList();
+    }
+
+    // Default fallback
     if (widget.spaceType == 'business') {
       return _type == 'expense'
           ? [
@@ -87,6 +81,52 @@ class _AddTransactionModalState extends State<AddTransactionModal> {
             {'name': 'Investasi', 'icon': Icons.trending_up_outlined},
             {'name': 'Lainnya', 'icon': Icons.add_circle_outline},
           ];
+  }
+
+  List<Map<String, dynamic>> get _availableAccountsList {
+    if (widget.accounts.isNotEmpty) {
+      return widget.accounts;
+    }
+    return [
+      {'name': 'Uang Tunai (Cash)', 'type': 'cash', 'icon': Icons.payments_outlined},
+      {'name': 'Rekening BCA', 'type': 'bank', 'icon': Icons.account_balance_outlined},
+      {'name': 'GoPay & OVO', 'type': 'ewallet', 'icon': Icons.account_balance_wallet_outlined},
+    ];
+  }
+
+  IconData _getIconData(dynamic icon) {
+    if (icon is IconData) return icon;
+    if (icon is String) {
+      switch (icon) {
+        case 'coffee':
+        case 'restaurant':
+          return Icons.restaurant_outlined;
+        case 'briefcase':
+        case 'work':
+          return Icons.work_outline;
+        case 'wallet':
+          return Icons.account_balance_wallet_outlined;
+        case 'trending-up':
+          return Icons.trending_up_outlined;
+        case 'shopping-bag':
+          return Icons.shopping_bag_outlined;
+        case 'navigation':
+        case 'car':
+          return Icons.directions_car_outlined;
+        case 'file-text':
+        case 'receipt':
+          return Icons.receipt_long_outlined;
+        case 'film':
+          return Icons.movie_outlined;
+        case 'activity':
+          return Icons.medical_services_outlined;
+        case 'bank':
+          return Icons.account_balance_outlined;
+        default:
+          return Icons.category_outlined;
+      }
+    }
+    return Icons.category_outlined;
   }
 
   void _openKeypad() {
@@ -138,12 +178,15 @@ class _AddTransactionModalState extends State<AddTransactionModal> {
               ),
             ),
             const SizedBox(height: 14),
-            ..._availableAccounts.map((acc) {
-              final isSelected = _selectedAccount == acc['name'];
+            ..._availableAccountsList.map((acc) {
+              final isSelected = _selectedAccountItem != null
+                  ? (_selectedAccountItem!['id'] != null && _selectedAccountItem!['id'] == acc['id']) ||
+                      _selectedAccountItem!['name'] == acc['name']
+                  : false;
               return InkWell(
                 onTap: () {
                   setState(() {
-                    _selectedAccount = acc['name'] as String;
+                    _selectedAccountItem = acc;
                   });
                   Navigator.pop(ctx);
                 },
@@ -174,7 +217,7 @@ class _AddTransactionModalState extends State<AddTransactionModal> {
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
-                          acc['icon'] as IconData,
+                          _getIconData(acc['icon'] ?? (acc['type'] == 'bank' ? Icons.account_balance : Icons.payments)),
                           size: 20,
                           color: isSelected
                               ? (isDark ? AppColors.accentDark : AppColors.accent)
@@ -208,6 +251,7 @@ class _AddTransactionModalState extends State<AddTransactionModal> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final selectedAccountName = _selectedAccountItem?['name'] ?? 'Pilih Dompet';
 
     return Container(
       padding: EdgeInsets.only(
@@ -258,7 +302,7 @@ class _AddTransactionModalState extends State<AddTransactionModal> {
                       onTap: () {
                         setState(() {
                           _type = 'expense';
-                          _selectedCategory = null;
+                          _selectedCategoryItem = null;
                         });
                       },
                     ),
@@ -271,7 +315,7 @@ class _AddTransactionModalState extends State<AddTransactionModal> {
                       onTap: () {
                         setState(() {
                           _type = 'income';
-                          _selectedCategory = null;
+                          _selectedCategoryItem = null;
                         });
                       },
                     ),
@@ -341,12 +385,12 @@ class _AddTransactionModalState extends State<AddTransactionModal> {
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: _categories.map((cat) {
-                final isSelected = _selectedCategory == cat['name'];
+              children: _availableCategories.map((cat) {
+                final isSelected = _selectedCategoryItem?['name'] == cat['name'];
                 return InkWell(
                   onTap: () {
                     setState(() {
-                      _selectedCategory = cat['name'];
+                      _selectedCategoryItem = cat;
                     });
                   },
                   borderRadius: BorderRadius.circular(12),
@@ -368,7 +412,7 @@ class _AddTransactionModalState extends State<AddTransactionModal> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          cat['icon'],
+                          _getIconData(cat['icon']),
                           size: 16,
                           color: isSelected
                               ? (isDark ? AppColors.accentDark : AppColors.accent)
@@ -376,7 +420,7 @@ class _AddTransactionModalState extends State<AddTransactionModal> {
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          cat['name'],
+                          cat['name'] as String,
                           style: AppTypography.labelSmall(
                             color: isSelected
                                 ? (isDark ? AppColors.accentDark : AppColors.accent)
@@ -411,7 +455,7 @@ class _AddTransactionModalState extends State<AddTransactionModal> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              _selectedAccount,
+                              selectedAccountName,
                               style: AppTypography.bodySmall(
                                 color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
                               ),
@@ -484,13 +528,15 @@ class _AddTransactionModalState extends State<AddTransactionModal> {
               width: double.infinity,
               height: 52,
               child: ElevatedButton(
-                onPressed: _amount > 0 && _selectedCategory != null
+                onPressed: _amount > 0 && _selectedCategoryItem != null
                     ? () {
                         widget.onSave({
                           'type': _type,
                           'amount': _amount,
-                          'category': _selectedCategory,
-                          'account': _selectedAccount,
+                          'category': _selectedCategoryItem!['name'],
+                          'category_id': _selectedCategoryItem!['id'],
+                          'account': selectedAccountName,
+                          'account_id': _selectedAccountItem?['id'],
                           'note': _noteController.text.trim(),
                           'date': _selectedDate.toIso8601String().substring(0, 10),
                         });
