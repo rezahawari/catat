@@ -1,25 +1,45 @@
+import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class ApiClient {
-  static const String defaultBaseUrl = 'http://10.0.2.2:8080';
+  static String get defaultBaseUrl {
+    if (kIsWeb) {
+      return 'http://localhost:8080';
+    }
+    // Jika dijalankan di Windows desktop:
+    if (defaultTargetPlatform == TargetPlatform.windows ||
+        defaultTargetPlatform == TargetPlatform.linux ||
+        defaultTargetPlatform == TargetPlatform.macOS) {
+      return 'http://localhost:8080';
+    }
+    // Jika dijalankan di Android Emulator:
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      return 'http://10.0.2.2:8080';
+    }
+    // Default fallback
+    return 'http://10.0.2.2:8080';
+  }
+
   final Dio dio;
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
 
   ApiClient({String? baseUrl})
       : dio = Dio(BaseOptions(
           baseUrl: baseUrl ?? defaultBaseUrl,
-          connectTimeout: const Duration(seconds: 10),
-          receiveTimeout: const Duration(seconds: 10),
+          connectTimeout: const Duration(seconds: 15),
+          receiveTimeout: const Duration(seconds: 15),
           headers: {'Content-Type': 'application/json'},
         )) {
     dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
-          final accessToken = await _storage.read(key: 'access_token');
-          if (accessToken != null && accessToken.isNotEmpty) {
-            options.headers['Authorization'] = 'Bearer $accessToken';
-          }
+          try {
+            final accessToken = await _storage.read(key: 'access_token');
+            if (accessToken != null && accessToken.isNotEmpty) {
+              options.headers['Authorization'] = 'Bearer $accessToken';
+            }
+          } catch (_) {}
           return handler.next(options);
         },
         onError: (DioException error, handler) async {
